@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Sosiologi: Modernisasi dan Globalisasi</title>
+    <!-- Tailwind CSS untuk Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti untuk efek Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
+        .hide { display: none !important; }
+        .option-btn:disabled { cursor: not-allowed; opacity: 0.9; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- MENU UTAMA -->
+    <div id="start-screen" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md text-center">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">Kuis Sosiologi<br><span class="text-lg text-blue-600">Modernisasi dan Globalisasi</span></h1>
+        
+        <div class="mb-4 text-left">
+            <label class="block text-gray-700 font-semibold mb-2">Nama Pemain:</label>
+            <input type="text" id="player-name" placeholder="Masukkan nama Anda..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+        </div>
+
+        <div class="mb-6 text-left">
+            <label class="block text-gray-700 font-semibold mb-2">Waktu per Soal:</label>
+            <select id="time-limit" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="15">15 Detik</option>
+                <option value="30">30 Detik</option>
+            </select>
+        </div>
+
+        <button onclick="startQuiz()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition duration-200">Mulai Kuis</button>
+    </div>
+
+    <!-- AREA KUIS -->
+    <div id="quiz-screen" class="hide bg-white p-6 md:p-8 rounded-xl shadow-lg w-full max-w-2xl">
+        <div class="flex justify-between items-center mb-6 border-b pb-4">
+            <span id="question-tracker" class="text-sm font-bold text-gray-500 uppercase tracking-wider">Soal 1 / 30</span>
+            <div class="flex items-center text-red-600 font-bold text-lg bg-red-100 px-4 py-1 rounded-full">
+                ⏱️ Waktu: <span id="timer-display" class="ml-2 w-6 text-center">15</span>
+            </div>
+        </div>
+
+        <h2 id="question-text" class="text-xl md:text-2xl font-semibold text-gray-800 mb-6 leading-relaxed">Pertanyaan dimuat disini...</h2>
+
+        <div id="options-container" class="space-y-3">
+            <!-- Tombol jawaban akan di-generate oleh JS -->
+        </div>
+    </div>
+
+    <!-- AREA HASIL & REVIEW -->
+    <div id="result-screen" class="hide bg-white p-6 md:p-8 rounded-xl shadow-lg w-full max-w-3xl my-8">
+        <div class="text-center mb-8 border-b pb-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Hasil Kuis Sosiologi</h1>
+            <p class="text-gray-600">Modernisasi dan Globalisasi</p>
+            <h2 class="text-xl font-semibold mt-4">Pemain: <span id="result-name" class="text-blue-600"></span></h2>
+            
+            <div class="mt-6">
+                <p class="text-gray-500 mb-1">Skor Akhir Anda:</p>
+                <div class="text-5xl font-extrabold text-green-600 mb-2" id="final-score">100</div>
+                <p class="text-gray-700 font-medium">Benar: <span id="correct-count"></span> dari <span id="total-count"></span> soal</p>
+            </div>
+        </div>
+
+        <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Review Jawaban</h3>
+        <div id="review-container" class="space-y-6 text-left">
+            <!-- Review akan dimuat disini -->
+        </div>
+
+        <div class="mt-8 text-center border-t pt-6">
+            <button onclick="location.reload()" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition duration-200">Main Lagi</button>
+        </div>
+    </div>
+
+    <script>
+        // Database 30 Soal Baru
+        const baseQuestions = [
+            { q: "Konsep modernisasi sering disalahartikan sebagai westernisasi, namun berakar dari bahasa Latin 'modernus', yang memiliki arti...", opts: ["Cara dan masa depan", "Proses dan masyarakat", "Cara dan waktu masa kini", "Perubahan dan waktu masa kini"], ans: "Cara dan waktu masa kini" },
+            { q: "Aspek paling menonjol dalam modernisasi adalah iptek. Siapakah tokoh yang mendefinisikan modernisasi sebagai penerapan pengetahuan ilmiah kepada semua aktivitas?", opts: ["Koentjaraningrat", "Johan Willem Schoorl", "Astrid S. Susanto", "Soerjono Soekanto"], ans: "Johan Willem Schoorl" },
+            { q: "Tokoh yang berpendapat bahwa modernisasi adalah bentuk dari perubahan sosial yang biasanya didasarkan pada suatu perencanaan (social planning) adalah...", opts: ["William F. Ogburn", "Wilbert E. Moore", "Soerjono Soekanto", "Koentjaraningrat"], ans: "Soerjono Soekanto" },
+            { q: "Menurut Wilbert E. Moore, modernisasi merupakan transformasi ke arah pola-pola ekonomis dan politis yang didahului oleh...", opts: ["Negara Asia Timur maju", "Negara berkembang", "Negara-negara Barat yang stabil", "Jaringan kerja global"], ans: "Negara-negara Barat yang stabil" },
+            { q: "Menurut Alex Inkeles, manusia modern menjunjung tinggi prinsip bahwa imbalan yang diterima seseorang harus sesuai dengan...", opts: ["Waktu luangnya", "Harkat hidup manusia lain", "Tingkat pendidikan formal", "Kontribusinya di dalam masyarakat"], ans: "Kontribusinya di dalam masyarakat" },
+            { q: "Berdasarkan ciri manusia modern, bagaimana sikap yang tepat terhadap konsep waktu?", opts: ["Terbuka hal baru dan melupakan masa lalu", "Menghargai waktu & berorientasi ke masa depan", "Berorientasi pada perencanaan masa lalu", "Menghabiskan waktu untuk rasionalitas"], ans: "Menghargai waktu & berorientasi ke masa depan" },
+            { q: "Berikut ini yang merupakan bagian dari lima ciri-ciri modernitas yang paling tepat adalah...", opts: ["Tradisionalisme, Diferensiasi, Rasionalitas", "Individualisme, Diferensiasi, Rasionalitas", "Kolektivisme, Ekonomisme, Perkembangan", "Individualisme, Irasionalitas, Ekonomisme"], ans: "Individualisme, Diferensiasi, Rasionalitas" },
+            { q: "Globalisasi menciptakan dunia seolah-olah hanya dimiliki oleh satu bangsa saja, yaitu...", opts: ["Bangsa Barat", "Bangsa Dunia", "Bangsa Maju", "Bangsa Multinasional"], ans: "Bangsa Dunia" },
+            { q: "Emanuel Richter mendefinisikan globalisasi sebagai jaringan kerja secara global yang mempersatukan masyarakat ke dalam...", opts: ["Hubungan sosial mendunia", "Interaksi antarperusahaan", "Persatuan dunia yang saling ketergantungan", "Keterkaitan dunia jangka panjang"], ans: "Persatuan dunia yang saling ketergantungan" },
+            { q: "Peter Drucker menyatakan bahwa salah satu proses nyata dari globalisasi adalah penyebaran...", opts: ["Perjalanan wisata yang cepat", "Budaya populer", "Komunikasi global secara instan", "Pemikiran internasional"], ans: "Komunikasi global secara instan" },
+            { q: "Pada era Globalisasi 1.0 (1492-1800), siapakah yang menjadi aktor utama pendorong ekspansi dan perdagangan dunia?", opts: ["Perusahaan multinasional", "Individu yang saling terhubung", "Organisasi internasional", "Negara-negara Eropa"], ans: "Negara-negara Eropa" },
+            { q: "Mesin utama perubahan pada era Globalisasi 1.0 adalah pemanfaatan tenaga secara produktif dengan menggunakan...", opts: ["Mesin diesel dan pesawat", "Angin (kapal & kincir) serta tenaga uap", "Satelit dan internet", "Listrik dan nuklir"], ans: "Angin (kapal & kincir) serta tenaga uap" },
+            { q: "Agen atau aktor penggerak utama perubahan pada era Globalisasi 2.0 (1800-2000) adalah lahirnya...", opts: ["Perusahaan multinasional", "Kerajaan penjelajah", "Individu mandiri", "Negara penyedia SDA"], ans: "Perusahaan multinasional" },
+            { q: "Pada Globalisasi 2.0, dunia menjadi lebih terjangkau berkat turunnya biaya telekomunikasi karena penemuan...", opts: ["Telegraf, telepon, satelit, dan internet awal", "Tenaga kuda dan mesin uap", "World wide web dan serat optik", "Kereta cepat (MRT)"], ans: "Telegraf, telepon, satelit, dan internet awal" },
+            { q: "Era Globalisasi 3.0 ditandai dengan 'Flat World' (dunia yang datar) yang bermakna...", opts: ["Pemerintahan dunia tunggal terbentuk", "Batas geografis dan waktu bukan penghalang", "Perbedaan ekonomi negara kaya miskin hilang", "MNC memegang kendali kedaulatan"], ans: "Batas geografis dan waktu bukan penghalang" },
+            { q: "Infrastruktur penyatu yang menjadi motor utama berjalannya Globalisasi 3.0 adalah...", opts: ["Mesin uap dan kereta", "Negara-negara Eropa", "Infrastruktur teknologi informasi", "Kapal laut tenaga angin"], ans: "Infrastruktur teknologi informasi" },
+            { q: "Salah satu ciri dari globalisasi adalah peningkatan interaksi kultural (budaya) yang dimotori oleh perkembangan...", opts: ["Kapal laut kargo", "Media massa", "Perjanjian bilateral", "Mata uang asing"], ans: "Media massa" },
+            { q: "Kegemaran pada K-Pop dan K-Drama serta ikut merayakan Halloween di Indonesia merupakan contoh nyata globalisasi di bidang...", opts: ["Ekonomi", "Transportasi", "Budaya", "Politik"], ans: "Budaya" },
+            { q: "Penggunaan bahasa asing dalam keseharian seperti frasa 'Guys, literally kita harus otw sekarang!' merupakan wujud globalisasi...", opts: ["Politik dan Diplomasi", "Budaya", "Transportasi udara", "Ekonomi"], ans: "Budaya" },
+            { q: "Salah satu dampak negatif yang paling disorot akibat kemudahan globalisasi di bidang komunikasi adalah...", opts: ["UMKM tersingkir", "Hoaks mudah menyebar & kecanduan gadget", "Ketergantungan ekonomi", "Timbulnya kemacetan lalu lintas"], ans: "Hoaks mudah menyebar & kecanduan gadget" },
+            { q: "Hadirnya e-commerce lintas negara seperti Amazon, Shopee, dan Lazada merupakan bentuk nyata globalisasi di bidang...", opts: ["Komunikasi", "Budaya", "Ekonomi", "Transportasi logistik"], ans: "Ekonomi" },
+            { q: "Di balik manfaat ekonomi dari globalisasi, terdapat dampak negatif kuat bagi pelaku usaha lokal di Indonesia, yakni...", opts: ["Masuknya budaya K-Pop", "UMKM bisa tersingkir akibat persaingan ketat", "Pengiriman SDA berkurang", "Email mulai ditinggalkan"], ans: "UMKM bisa tersingkir akibat persaingan ketat" },
+            { q: "Layanan transportasi melalui aplikasi smartphone seperti Gojek, Grab, dan Uber adalah bukti inovasi globalisasi di bidang...", opts: ["Komunikasi massa", "Transportasi", "Diplomasi", "Birokrasi"], ans: "Transportasi" },
+            { q: "Pertumbuhan transportasi laut global sangat didorong oleh kebutuhan untuk meningkatkan pergerakan...", opts: ["Kargo SDA yang dibutuhkan negara maju", "Pertukaran mahasiswa antarbenua", "Organisasi HAM ke negara berkembang", "Investasi tol internasional"], ans: "Kargo SDA yang dibutuhkan negara maju" },
+            { q: "Organisasi internasional seperti PBB, ASEAN, dan G20 sebagai wadah kerja sama dunia merepresentasikan globalisasi di bidang...", opts: ["Ekonomi Bebas", "Politik", "Transportasi Lintas Batas", "Budaya Pop"], ans: "Politik" },
+            { q: "Interaksi dan kerja sama antarnegara terkadang membawa potensi negatif di bidang politik akibat...", opts: ["Hancurnya industri transportasi lokal", "Ketergantungan pada Euro", "Intervensi asing & hilangnya kedaulatan", "Hoaks via email"], ans: "Intervensi asing & hilangnya kedaulatan" },
+            { q: "Menyebarnya nilai Hak Asasi Manusia (HAM), demokrasi, serta diadopsinya sistem pemilu di berbagai negara adalah bukti globalisasi...", opts: ["Politik", "Ekonomi", "Budaya", "Teknologi"], ans: "Politik" },
+            { q: "Isu global yang mendesak kerja sama lintas batas negara saat ini secara dominan melibatkan bahasan seputar...", opts: ["Pilkada mandiri daerah", "Perubahan iklim, terorisme, dan pandemi", "Brand pakaian luar negeri", "Pembangunan rel MRT lokal"], ans: "Perubahan iklim, terorisme, dan pandemi" },
+            { q: "Pemberian Sanksi Internasional (seperti Sanksi PBB) kepada negara yang melanggar kesepakatan adalah bentuk wujud globalisasi...", opts: ["Politik", "Ekonomi Kreatif", "Komunikasi Elektronik", "Hak Sipil Individu"], ans: "Politik" },
+            { q: "Mobilitas dan keberadaan para TKI/TKW serta ekspatriat yang bekerja lintas batas benua merupakan contoh globalisasi di bidang...", opts: ["Budaya", "Transportasi Udara", "Politik", "Ekonomi"], ans: "Ekonomi" }
+        ];
+
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timeLimit = 15;
+        let timeLeft = 0;
+        let timerInterval;
+        let playerName = "";
+        let userReviewData = []; // Menyimpan riwayat jawaban untuk review
+
+        // Fungsi mengacak array (Fisher-Yates)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Persiapan Kuis
+        function startQuiz() {
+            const nameInput = document.getElementById('player-name').value.trim();
+            if (!nameInput) {
+                alert("Silakan masukkan nama Anda terlebih dahulu!");
+                return;
+            }
+            playerName = nameInput;
+            timeLimit = parseInt(document.getElementById('time-limit').value);
+            
+            // Map dan acak soal dan opsinya
+            questions = baseQuestions.map(item => {
+                let optionsObj = item.opts.map(opt => ({ text: opt, isCorrect: opt === item.ans }));
+                return {
+                    question: item.q,
+                    options: shuffleArray(optionsObj)
+                };
+            });
+            questions = shuffleArray(questions);
+
+            document.getElementById('start-screen').classList.add('hide');
+            document.getElementById('quiz-screen').classList.remove('hide');
+            
+            loadQuestion();
+        }
+
+        // Memuat Pertanyaan
+        function loadQuestion() {
+            if (currentQuestionIndex >= questions.length) {
+                endQuiz();
+                return;
+            }
+
+            const currentQ = questions[currentQuestionIndex];
+            document.getElementById('question-tracker').innerText = `Soal ${currentQuestionIndex + 1} / ${questions.length}`;
+            document.getElementById('question-text').innerText = currentQ.question;
+            
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = ''; // Bersihkan opsi sebelumnya
+
+            currentQ.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                // Tampilan awal tombol: background abu muda, teks gelap.
+                btn.className = `option-btn w-full text-left px-5 py-4 rounded-lg border-2 border-gray-200 bg-gray-50 text-gray-800 font-medium hover:bg-blue-50 hover:border-blue-300 transition duration-200 text-base md:text-lg`;
+                btn.innerText = opt.text;
+                btn.onclick = () => handleAnswer(opt, btn);
+                optionsContainer.appendChild(btn);
+            });
+
+            startTimer();
+        }
+
+        function startTimer() {
+            timeLeft = timeLimit;
+            document.getElementById('timer-display').innerText = timeLeft;
+            clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer-display').innerText = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeOut();
+                }
+            }, 1000);
+        }
+
+        // Jika user memilih jawaban
+        function handleAnswer(selectedOption, clickedBtn) {
+            clearInterval(timerInterval);
+            disableAllButtons();
+
+            const currentQ = questions[currentQuestionIndex];
+            const correctOption = currentQ.options.find(o => o.isCorrect);
+
+            // Simpan riwayat
+            userReviewData.push({
+                question: currentQ.question,
+                userAnswer: selectedOption.text,
+                correctAnswer: correctOption.text,
+                isCorrect: selectedOption.isCorrect
+            });
+
+            if (selectedOption.isCorrect) {
+                score++;
+                clickedBtn.classList.replace('bg-gray-50', 'bg-green-500');
+                clickedBtn.classList.replace('text-gray-800', 'text-white');
+                clickedBtn.classList.add('border-green-600');
+                triggerConfetti();
+            } else {
+                clickedBtn.classList.replace('bg-gray-50', 'bg-red-500');
+                clickedBtn.classList.replace('text-gray-800', 'text-white');
+                clickedBtn.classList.add('border-red-600');
+                highlightCorrectAnswer(correctOption.text);
+            }
+
+            setTimeout(() => {
+                currentQuestionIndex++;
+                loadQuestion();
+            }, 2000);
+        }
+
+        // Jika waktu habis
+        function handleTimeOut() {
+            disableAllButtons();
+            const currentQ = questions[currentQuestionIndex];
+            const correctOption = currentQ.options.find(o => o.isCorrect);
+
+            // Simpan riwayat (Tidak menjawab)
+            userReviewData.push({
+                question: currentQ.question,
+                userAnswer: "<i>Tidak Menjawab (Waktu Habis)</i>",
+                correctAnswer: correctOption.text,
+                isCorrect: false
+            });
+
+            highlightCorrectAnswer(correctOption.text);
+
+            setTimeout(() => {
+                currentQuestionIndex++;
+                loadQuestion();
+            }, 2000);
+        }
+
+        // Mencegah klik ganda
+        function disableAllButtons() {
+            const btns = document.querySelectorAll('.option-btn');
+            btns.forEach(btn => btn.disabled = true);
+        }
+
+        // Memunculkan jawaban yang benar bila salah/waktu habis
+        function highlightCorrectAnswer(correctText) {
+            const btns = document.querySelectorAll('.option-btn');
+            btns.forEach(btn => {
+                if (btn.innerText === correctText) {
+                    btn.classList.replace('bg-gray-50', 'bg-green-500');
+                    btn.classList.replace('text-gray-800', 'text-white');
+                    btn.classList.add('border-green-600');
+                }
+            });
+        }
+
+        // Efek Confetti (Merayakan jawaban benar)
+        function triggerConfetti() {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#22c55e', '#3b82f6', '#eab308']
+            });
+        }
+
+        // Mengakhiri kuis dan menampilkan layar hasil/review
+        function endQuiz() {
+            document.getElementById('quiz-screen').classList.add('hide');
+            document.getElementById('result-screen').classList.remove('hide');
+
+            const total = questions.length;
+            const finalScore = Math.round((score / total) * 100);
+
+            document.getElementById('result-name').innerText = playerName;
+            document.getElementById('final-score').innerText = finalScore;
+            document.getElementById('correct-count').innerText = score;
+            document.getElementById('total-count').innerText = total;
+
+            generateReview();
+        }
+
+        // Membuat daftar review jawaban
+        function generateReview() {
+            const container = document.getElementById('review-container');
+            container.innerHTML = '';
+
+            userReviewData.forEach((data, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `p-4 rounded-lg border-l-4 ${data.isCorrect ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}`;
+                
+                itemDiv.innerHTML = `
+                    <p class="font-semibold text-gray-800 mb-2">${index + 1}. ${data.question}</p>
+                    <p class="text-sm text-gray-700">Jawaban Anda: <span class="font-bold ${data.isCorrect ? 'text-green-600' : 'text-red-600'}">${data.userAnswer}</span></p>
+                    ${!data.isCorrect ? `<p class="text-sm text-gray-700 mt-1">Kunci Jawaban: <span class="font-bold text-green-600">${data.correctAnswer}</span></p>` : ''}
+                `;
+                container.appendChild(itemDiv);
+            });
+        }
+    </script>
+</body>
+</html>
